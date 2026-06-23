@@ -87,9 +87,9 @@ table {
     }
 
     td {
-        height: 70px;
+        height: 90px;
         padding: 3px;
-        font-size: 12px;
+        font-size: 14px;
     }
 
     button {
@@ -97,6 +97,9 @@ table {
         padding: 10px;
         margin: 4px;
     }
+    .character-list {
+    grid-template-columns: 1fr;
+}
 }
 </style>
 </head>
@@ -174,7 +177,7 @@ function renderCalendar() {
     let html = "<table>";
 
     let day = 1;
-    let startDay = 3;
+    let startDay = 6;
 
     for (let row = 0; row < 6; row++) {
 
@@ -187,7 +190,7 @@ function renderCalendar() {
 
 }
 
-        for (let col = 0; col < 7; col++) {
+        for (let col = (row === 0 ? startDay : 0); col < 7; col++) {
 
             if (day <= 31) {
 
