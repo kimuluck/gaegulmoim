@@ -2,8 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+
+    <meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
     <title>개굴모임</title>
+
 <style>
+    
     body {
         background-color: #f8f6e9;
         text-align: center;
@@ -16,15 +21,18 @@
     }
 
     button {
-    font-size: 18px;
-    padding: 12px;
-    margin: 6px;
-}
+        font-size: 20px;
+        padding: 15px;
+        margin: 10px;
+        border-radius: 15px;
+        border: none;
+        background-color: white;
+        cursor: pointer;
+    }
 #weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     width: 100%;
-    margin-bottom: 5px;
     font-weight: bold;
 }
 
@@ -35,110 +43,104 @@
         transform: scale(1.1);
     }
     table {
-    margin: auto;
+    width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
-     width: 100%;
 }
 
 td {
-    width: auto;
+    width: 120px;
     height: 120px;
     border: 1px solid #999;
     vertical-align: top;
-    padding: 5px;
+    padding: 10px;
     cursor: pointer;
     border-radius: 10px;
-    font-size: 16px;
 }
 
 td:hover {
     background-color: #f0f0f0;
 }
-.calendar-container {
-  width: 100%;
-  overflow-x: auto;
+#month-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
 }
 
-.calendar {
-  width: 100%;
-  table-layout: fixed;
-}
-.character-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+#month-header button {
+    padding: 10px 15px;
+    font-size: 18px;
 }
 
-.calendar-wrapper {
-  overflow-x: auto;
+#month-header h2 {
+    margin: 0;
+    color: #4d7c4d;
+}
+#best-day {
+    color: #4d7c4d;
+    margin: 15px 0;
+}
+.best-day-cell {
+    background-color: #91e078;
+    border: 3px solid #6db56d;
 }
 
-table {
-  table-layout: fixed;
+.good-day-cell {
+    background-color: #73bbff;
+    border: 3px solid #4d80e0;
+}
+
+.maybe-day-cell {
+    background-color: #ffc578;
+    border: 3px solid #ffa052;
 }
 @media (max-width: 768px) {
 
-    body {
-    max-width: 100%;
-    margin: 0;
-    padding: 10px;
-}
-
-    h1 {
-        font-size: 36px;
-    }
-
     td {
-        height: 140px;
-        padding: 3px;
-        font-size: 18px;
+        height: 90px;
+        font-size: 14px;
+        padding: 5px;
     }
 
     button {
         font-size: 16px;
         padding: 10px;
-        margin: 4px;
     }
-    .character-list {
-    grid-template-columns: 1fr;
-}
-}
-.month-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin: 20px 0;
-    font-size: 24px;
-    font-weight: bold;
-}
 
-.month-header button {
-    width: 50px;
-    height: 50px;
-    border-radius: 15px;
+    h1 {
+        font-size: 32px;
+    }
+
+}
+.selected-character {
+    background-color: #ff6060;
+    border: 3px solid #a80000;
 }
 </style>
 </head>
 <body>
+    
 <h1>🐸 개굴모임</h1>
-<div class="character-list">
-
-<button onclick="selectCharacter('🐱 ggoyoung')">🐱 고양이</button>
-<button onclick="selectCharacter('🐻 brownbbeer')">🐻 곰</button>
-<button onclick="selectCharacter('🍅 ibbu')">🍅 토마토</button>
-<button onclick="selectCharacter('🦎 kimuluck')">🦎 도마뱀</button>
-
+<div id="month-header">
+    <button onclick="previousMonth()">◀</button>
+    <h2 id="month-title">📅 2026년 7월</h2>
+    <button onclick="nextMonth()">▶</button>
 </div>
+<button id="cat" onclick="selectCharacter('🐱', 'cat')">🐱</button>
+
+<button id="bear" onclick="selectCharacter('🐻', 'bear')">🐻</button>
+
+<button id="tomato" onclick="selectCharacter('🍅', 'tomato')">🍅</button>
+
+<button id="lizard" onclick="selectCharacter('🦎', 'lizard')">🦎</button>
+
 <h2 id="selected">
-    선택된 캐릭터 : 없음
+
 </h2>
-<h2>스티커 결과</h2>
-<div class="month-header">
-    <button>◀</button>
-    <span>📅 2026년 8월</span>
-    <button>▶</button>
-</div>
+<h3 id="best-day"></h3>
+
 <div id="weekdays">
     <div>일</div>
     <div>월</div>
@@ -147,28 +149,44 @@ table {
     <div>목</div>
     <div>금</div>
     <div>토</div>
-    </div>
-<div class="calendar-wrapper">
-    <div id="calendar"></div>
 </div>
 
-<script>
+<div id="calendar"></div>
 
+<script>
+let currentMonth = 7;
+let currentYear = 2026;
+const monthNames = [
+    "",
+    "1월", "2월", "3월", "4월",
+    "5월", "6월", "7월", "8월",
+    "9월", "10월", "11월", "12월"
+];
 let selectedCharacter = "";
 
 let stickers = {};
 
-for(let day = 1; day <= 31; day++) {
-    stickers[day] = [];
+const savedData = localStorage.getItem("stickers");
+
+if (savedData) {
+    stickers = JSON.parse(savedData);
 }
 
-function selectCharacter(character) {
+function selectCharacter(character, buttonId) {
+
     selectedCharacter = character;
 
     document.getElementById("selected").innerText =
-        "선택된 캐릭터 : " + character;
-}
+        "선택됨 " + character;
 
+    document.querySelectorAll("button").forEach(btn => {
+        btn.classList.remove("selected-character");
+    });
+
+    document
+        .getElementById(buttonId)
+        .classList.add("selected-character");
+}
 function addSticker(day) {
 
     if (selectedCharacter === "") {
@@ -176,7 +194,14 @@ function addSticker(day) {
         return;
     }
 
-    let dayStickers = stickers[day];
+    let dateKey =
+    `${currentYear}-${currentMonth}-${day}`;
+
+if (!stickers[dateKey]) {
+    stickers[dateKey] = [];
+}
+
+let dayStickers = stickers[dateKey];
 
     if (dayStickers.includes(selectedCharacter)) {
 
@@ -190,42 +215,96 @@ function addSticker(day) {
         dayStickers.push(selectedCharacter);
 
     }
-
+localStorage.setItem(
+    "stickers",
+    JSON.stringify(stickers)
+);
     renderCalendar();
 }
+function updateMonthTitle() {
 
+    document.getElementById("month-title").innerText =
+        `📅 ${currentYear}년 ${currentMonth}월`;
+
+}
+
+function nextMonth() {
+
+    currentMonth++;
+
+    if(currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+    }
+
+    updateMonthTitle();
+     renderCalendar();
+}
+
+
+function previousMonth() {
+
+    currentMonth--;
+
+    if(currentMonth < 1) {
+        currentMonth = 12;
+        currentYear--;
+    }
+
+    updateMonthTitle();
+    renderCalendar();
+}
 function renderCalendar() {
 
     let html = "<table>";
 
     let day = 1;
-    let startDay = 6;
-
+    let startDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+let daysInMonth =
+    new Date(currentYear, currentMonth, 0).getDate();
     for (let row = 0; row < 6; row++) {
 
         html += "<tr>";
-            if (row === 0) {
 
-    for (let i = 0; i < startDay; i++) {
-        html += "<td></td>";
-    }
+        for (let col = 0; col < 7; col++) {
 
-}
+            // 첫 줄 앞쪽 빈칸
+            if (row === 0 && col < startDay) {
 
-        for (let col = (row === 0 ? startDay : 0); col < 7; col++) {
+                html += "<td></td>";
 
-            if (day <= 31) {
+            } else if (day <= daysInMonth) {
 
+                let dateKey =
+    `${currentYear}-${currentMonth}-${day}`;
+
+let isBestDay =
+    stickers[dateKey] &&
+    stickers[dateKey].length === 4;
+    let stickerCount =
+    (stickers[dateKey] || []).length;
                 html += `
-                <td onclick="addSticker(${day})">
+                <td onclick="addSticker(${day})"
+                 class="
+${stickerCount === 4 ? 'best-day-cell' : ''}
+${stickerCount === 3 ? 'good-day-cell' : ''}
+${stickerCount === 2 ? 'maybe-day-cell' : ''}
+"
+                >
                     <strong>${day}일</strong><br>
-                    ${stickers[day].join(" ")}
+                    ${(stickers[
+`${currentYear}-${currentMonth}-${day}`
+] || []).join(" ")}
                 </td>
                 `;
 
                 day++;
-            }
 
+            } else {
+
+                html += "<td></td>";
+
+            }
         }
 
         html += "</tr>";
@@ -234,7 +313,37 @@ function renderCalendar() {
     html += "</table>";
 
     document.getElementById("calendar").innerHTML = html;
+    
+let availableDays = [];
+
+for (let day = 1; day <= daysInMonth; day++) {
+
+    let dateKey =
+        `${currentYear}-${currentMonth}-${day}`;
+
+    if (
+        stickers[dateKey] &&
+        stickers[dateKey].length === 4
+    ) {
+        console.log(dateKey, stickers[dateKey]);
+        availableDays.push(day);
+    }
 }
+
+if (availableDays.length > 0) {
+
+    document.getElementById("best-day").innerHTML =
+        "🎉 모두 가능한 날짜 : " +
+        availableDays.join(", ") + "일";
+
+} else {
+
+    document.getElementById("best-day").innerHTML =
+        "아직 모두 가능한 날짜가 없어요.";
+
+}
+}
+
 renderCalendar();
 </script>
 </body>
