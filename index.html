@@ -10,11 +10,14 @@
 <style>
     
     body {
-        background-color: #f8f6e9;
-        text-align: center;
-        font-family: sans-serif;
-        padding-top: 30px;
-    }
+    background-color: #f8f6e9;
+    text-align: center;
+    font-family: sans-serif;
+    padding-top: 30px;
+    margin: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+}
 
     h1 {
         color: #4d7c4d;
@@ -42,12 +45,18 @@
     button:hover {
         transform: scale(1.1);
     }
-    table {
+  table {
     width: 100%;
-    table-layout: fixed;
+    min-width: 700px;
     border-collapse: collapse;
 }
+#weekdays {
+    min-width: 700px;
+}
 
+#calendar-wrapper {
+    overflow-x: auto;
+}
 td {
     width: 120px;
     height: 120px;
@@ -99,24 +108,51 @@ td:hover {
 @media (max-width: 768px) {
 
     td {
+        width: 100px;
         height: 90px;
         font-size: 14px;
-        padding: 5px;
+        padding: 4px;
+    }
+
+    th {
+        width: 100px;
     }
 
     button {
-        font-size: 16px;
-        padding: 10px;
+        font-size: 18px;
+        padding: 12px;
     }
 
-    h1 {
-        font-size: 32px;
+    #month-title {
+        font-size: 24px;
     }
-
 }
 .selected-character {
     background-color: #ff6060;
     border: 3px solid #a80000;
+}
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 10px;
+}
+#calendar {
+    width: 100%;
+    overflow-x: auto;
+}
+th {
+    width: 120px;
+    height: 40px;
+    font-weight: bold;
+    text-align: center;
+}
+#reset-btn {
+    background-color: #ff8c8c;
+    color: white;
+    font-size: 16px;
 }
 </style>
 </head>
@@ -129,27 +165,17 @@ td:hover {
     <button onclick="nextMonth()">▶</button>
 </div>
 <button id="cat" onclick="selectCharacter('🐱', 'cat')">🐱</button>
-
 <button id="bear" onclick="selectCharacter('🐻', 'bear')">🐻</button>
-
 <button id="tomato" onclick="selectCharacter('🍅', 'tomato')">🍅</button>
-
 <button id="lizard" onclick="selectCharacter('🦎', 'lizard')">🦎</button>
 
-<h2 id="selected">
+<br>
 
-</h2>
+<button onclick="resetData()" id="reset-btn">
+    🗑 초기화
+</button>
+
 <h3 id="best-day"></h3>
-
-<div id="weekdays">
-    <div>일</div>
-    <div>월</div>
-    <div>화</div>
-    <div>수</div>
-    <div>목</div>
-    <div>금</div>
-    <div>토</div>
-</div>
 
 <div id="calendar"></div>
 
@@ -166,20 +192,13 @@ let selectedCharacter = "";
 
 let stickers = {};
 
-const savedData = localStorage.getItem("stickers");
-
-if (savedData) {
-    stickers = JSON.parse(savedData);
-}
-
 function selectCharacter(character, buttonId) {
 
     selectedCharacter = character;
 
-    document.getElementById("selected").innerText =
-        "선택됨 " + character;
-
-    document.querySelectorAll("button").forEach(btn => {
+    document.querySelectorAll(
+        "#cat,#bear,#tomato,#lizard"
+    ).forEach(btn => {
         btn.classList.remove("selected-character");
     });
 
@@ -215,10 +234,7 @@ let dayStickers = stickers[dateKey];
         dayStickers.push(selectedCharacter);
 
     }
-localStorage.setItem(
-    "stickers",
-    JSON.stringify(stickers)
-);
+saveStickers();
     renderCalendar();
 }
 function updateMonthTitle() {
@@ -237,8 +253,11 @@ function nextMonth() {
         currentYear++;
     }
 
-    updateMonthTitle();
-     renderCalendar();
+    localStorage.setItem("month", currentMonth);
+localStorage.setItem("year", currentYear);
+
+   updateMonthTitle();
+loadStickers();
 }
 
 
@@ -251,12 +270,26 @@ function previousMonth() {
         currentYear--;
     }
 
+    localStorage.setItem("month", currentMonth);
+localStorage.setItem("year", currentYear);
+
     updateMonthTitle();
-    renderCalendar();
+    loadStickers();
 }
 function renderCalendar() {
 
-    let html = "<table>";
+  let html = `
+<table>
+<tr>
+    <th>일</th>
+    <th>월</th>
+    <th>화</th>
+    <th>수</th>
+    <th>목</th>
+    <th>금</th>
+    <th>토</th>
+</tr>
+`;
 
     let day = 1;
     let startDay = new Date(currentYear, currentMonth - 1, 1).getDay();
@@ -344,7 +377,94 @@ if (availableDays.length > 0) {
 }
 }
 
+currentMonth =
+    Number(localStorage.getItem("month")) || 7;
+
+currentYear =
+    Number(localStorage.getItem("year")) || 2026;
+
+updateMonthTitle();
 renderCalendar();
+
+
+function resetData() {
+
+    if(confirm("모든 스티커를 삭제할까요?")) {
+
+        localStorage.removeItem("stickers");
+        localStorage.removeItem("month");
+        localStorage.removeItem("year");
+
+        stickers = {};
+
+        currentMonth = 7;
+        currentYear = 2026;
+
+        updateMonthTitle();
+        renderCalendar();
+    }
+}
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc
+  } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyDVIo9S5rmYqGgn03e7QN_FFiCCPHDBVIo",
+  authDomain: "green-lizard.firebaseapp.com",
+  projectId: "green-lizard",
+  storageBucket: "green-lizard.firebasestorage.app",
+  messagingSenderId: "418709683690",
+  appId: "1:418709683690:web:5cd6f5b65e5935a5c10693",
+  measurementId: "G-YYJ624ZQGY"
+};
+
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+window.db = db;
+window.doc = doc;
+window.getDoc = getDoc;
+window.setDoc = setDoc;
+
+window.saveStickers = async function() {
+    await setDoc(
+        doc(db, "calendar", "shared"),
+        {
+            stickers: stickers
+        }
+    );
+};
+
+window.loadStickers = async function() {
+
+    const snap = await getDoc(
+        doc(db, "calendar", "shared")
+    );
+
+    if (snap.exists()) {
+
+        const data = snap.data();
+
+        if (data.stickers) {
+            stickers = data.stickers;
+            renderCalendar();
+        }
+    }
+};
+
+loadStickers();
+
+  window.db = db;
+  window.doc = doc;
+  window.getDoc = getDoc;
+  window.setDoc = setDoc;
 </script>
 </body>
 </html>
